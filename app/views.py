@@ -1,17 +1,25 @@
-from flask import g, abort
+from flask import g, abort, render_template
 from app import app
-import rethinkdb as r
+from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
+from .forms import TaskForm
+
 
 # rethink config
 RDB_HOST =  'localhost'
 RDB_PORT = 28015
 TODO_DB = 'todo'
+r = RethinkDB()
+
+@app.route("/")
+def index():
+    form = TaskForm()
+    selection = list(r.table('todos').run(g.rdb_conn))
+    return render_template('index.html', form=form, tasks=selection)
 
 # db setup; only run once
 def dbSetup():
-    rdb = r.RethinkDB()
-    connection = rdb.connect(host=RDB_HOST, port=RDB_PORT)
+    connection = r.connect(host=RDB_HOST, port=RDB_PORT)
     try:
         r.db_create(TODO_DB).run(connection)
         r.db(TODO_DB).table_create('todos').run(connection)
