@@ -1,4 +1,4 @@
-from flask import g, abort, render_template
+from flask import g, abort, render_template, redirect, url_for
 from app import app
 from rethinkdb import RethinkDB
 from rethinkdb.errors import RqlRuntimeError, RqlDriverError
@@ -11,9 +11,12 @@ RDB_PORT = 28015
 TODO_DB = 'todo'
 r = RethinkDB()
 
-@app.route("/")
+@app.route("/", methods = ['GET', 'POST'])
 def index():
     form = TaskForm()
+    if form.validate_on_submit():
+        r.table('todos').insert({"name": form.label.data}).run(g.rdb_conn)
+        return redirect(url_for('index'))
     selection = list(r.table('todos').run(g.rdb_conn))
     return render_template('index.html', form=form, tasks=selection)
 
